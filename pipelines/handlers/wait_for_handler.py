@@ -4,9 +4,20 @@ class WaitForSelectorHandler(ActionHandler):
     def can_handle(self, action):
         return action.get("action") == "wait_for"
 
-    def handle(self, action, driver):
-        selector = action["selector"]
-        timeout = action.get("timeout", 30000)      # default 30s
-        state   = action.get("state", "visible")
+    async def handle(self, action, driver):
+        page = driver.page
+        selector = action.get("selector")
+        value = action.get("value", 30000)
 
-        driver.wait_for(selector, timeout=timeout, state=state)
+        dom_events = {
+            "domloaded": "domcontentloaded",
+            "domcontentloaded": "domcontentloaded",
+            "load": "load",
+            "networkidle": "networkidle"
+        }
+
+        if selector is None and value in dom_events:
+            await page.wait_for_load_state(dom_events[value])
+            return
+
+        await page.wait_for_selector(selector, timeout=value)
